@@ -1,4 +1,4 @@
-#!/usr/bin/env/python2
+#!/usr/bin/env python2
 
 
 #python-postgres-count-tables.py
@@ -25,6 +25,7 @@ import argparse
 import ConfigParser
 import os
 import StringIO
+import sys
 
 import psycopg2
 
@@ -101,18 +102,20 @@ def counttables(conn, minimum=0, maximum=0):
     query = "SELECT COUNT(table_name) FROM information_schema.tables "
     query += "WHERE table_schema != 'pg_catalog' AND table_schema != "
     query += "'information_schema';"
-    print(query)
     cur = conn.cursor()
     cur.execute(query)
     tablecount = cur.fetchone()[0]
     cur.close()
-    if minimum == 0 or maximum == 0:
+    #print "minimum = ", minimum
+    if minimum == 0 and maximum == 0:
         return tablecount
     if tablecount < minimum:
-        sys.stderror.write('Database contains less than ' + minimum + 'tables')
+        sys.stderr.write(
+            'Database contains less than ' + str(minimum) + ' tables\n')
         sys.exit(40)
     if tablecount > maximum:
-        sys.stderror.write('Database contains more than ' + maximum + 'tables')
+        sys.stderr.write(
+            'Database contains more than ' + str(maximum) + ' tables\n')
         sys.exit(41)
     return tablecount
 
@@ -139,12 +142,14 @@ if __name__ == "__main__":
         '--username', '-U', help=help['username'], default=os.getlogin())
     parser.add_argument('--host', '-H', help=help['host'], default='localhost')
     parser.add_argument('--password', '-q', help=help['password'], default='')
-    parser.add_argument('--minimum', '-m', help=help['minimum'])
-    parser.add_argument('--maximum', '-M', help=help['maximum'])
+    parser.add_argument(
+        '--minimum', '-m', help=help['minimum'],default=0, type=int)
+    parser.add_argument('--maximum', '-M', help=help['maximum'],default=0)
     args = parser.parse_args()
     conf = createconfig(
         dbname=args.dbname, username=args.username, password=args.password,
         host=args.host, maximum=args.maximum, minimum=args.minimum)
-    print stringconfig(conf)
+    #this is useful when debugging:
+    #print stringconfig(conf)
     c = makeconnection(conf)
-    print(counttables(c))
+    print(str(counttables(c,args.minimum,args.maximum)) + " tables counted.")

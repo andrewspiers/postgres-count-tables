@@ -11,6 +11,7 @@ setup(
         license='Apache 2.0',
         long_description=open('README.txt').read(),
         install_requires=["psycopg2 >= 2.4.5",],
+        scripts=['bin/python-postgres-count-tables.py'],
     )
 
 
