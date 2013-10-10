@@ -45,24 +45,25 @@ def findconfig():
     locations.append('/etc/ppct_config')
     locations = [item for item in locations if item]  # strip out any None
     l = config.read(locations)
-    #print (locations)
-    #print ("configuration file found at " + " ".join(l))
     return l
 
 
-def defaultconfig():
+def createconfig(
+        dbname=os.getlogin(),
+        username=os.getlogin(),
+        password="",
+        host="localhost",
+        minimum=0,
+        maximum=0):
     """return a ConfigParser containing some defaults."""
     wconfig = ConfigParser.ConfigParser()
     wconfig.add_section('Main')
-    #dbname,user,password,host
-    #default dbname : username
-    wconfig.set('Main', 'dbname', os.getlogin())
-    #default user   : username
-    wconfig.set('Main', 'username', os.getlogin())
-    #default password : empty string
-    wconfig.set('Main', 'password', '')
-    #default host     : localhost
-    wconfig.set('Main', 'host', 'localhost')
+    wconfig.set('Main', 'dbname', dbname)
+    wconfig.set('Main', 'username', username)
+    wconfig.set('Main', 'password', password)
+    wconfig.set('Main', 'host', host)
+    wconfig.set('Main', 'minimum', minimum)
+    wconfig.set('Main', 'maximum', maximum)
     return wconfig
 
 
@@ -89,10 +90,11 @@ def makeconnection(config):
     return conn
 
 
-def counttables(conn):
+def counttables(conn, minimum=0, maximum=0):
     """
     given a connection to a database (conn), return the number of tables in
-    that database.
+    that database. if provided with a minimum or maximum number of tables,
+    sys.exit with code 40 or 41.
 
     Excludes tables in the information_schema and pg_catalog schemas.
     """
@@ -104,11 +106,45 @@ def counttables(conn):
     cur.execute(query)
     tablecount = cur.fetchone()[0]
     cur.close()
+    if minimum == 0 or maximum == 0:
+        return tablecount
+    if tablecount < minimum:
+        sys.stderror.write('Database contains less than ' + minimum + 'tables')
+        sys.exit(40)
+    if tablecount > maximum:
+        sys.stderror.write('Database contains more than ' + maximum + 'tables')
+        sys.exit(41)
     return tablecount
 
 
-findconfig()
-default = defaultconfig()
-printabledefault = stringconfig(default)
-print(printabledefault)
-print(counttables(makeconnection(defaultconfig())))
+if __name__ == "__main__":
+    help = {
+        'dbname': 'The database to connect to. Defaults to your username.',
+        'username': 'The username to user to connect. Defaults to \
+                your username.',
+        'host': 'The database server host. Defaults to localhost.',
+        'password': 'Defaults to empty string.',
+        'minimum': 'The minimum number of tables. If the database has fewer \
+                tables than this, The script will exit with status \
+                40.',
+        'maximum': 'The maximum number of tables. If the database has \
+                more tables than thiis, the script will exit with status \
+                41.', }
+
+    parser = argparse.ArgumentParser(
+        description="Count the number of tables in a given database")
+    parser.add_argument('--dbname', '-d', help=help['dbname'],
+                        default=os.getlogin())
+    parser.add_argument(
+        '--username', '-U', help=help['username'], default=os.getlogin())
+    parser.add_argument('--host', '-H', help=help['host'], default='localhost')
+    parser.add_argument('--password', '-q', help=help['password'], default='')
+    parser.add_argument('--minimum', '-m', help=help['minimum'])
+    parser.add_argument('--maximum', '-M', help=help['maximum'])
+    args = parser.parse_args()
+    conf = createconfig(
+        dbname=args.dbname, username=args.username, password=args.password,
+        host=args.host, maximum=args.maximum, minimum=args.minimum)
+    print stringconfig(conf)
+    c = makeconnection(conf)
+    print(counttables(c))
