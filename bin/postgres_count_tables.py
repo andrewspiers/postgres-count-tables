@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 
 
-#python-postgres-count-tables.py
+#postgres_count_tables.py
 
 """
 notes
