@@ -6,15 +6,8 @@
 """
 notes
 -----
-Configuration can be in a configuration file, or supplied entirely as
+Configuration must be supplied entirely as
 arguments.
-
-Search order for the config file:
-* os.getenv('PPCT_CONFIG'),
-* os.getcwd(),
-* os.getenv(XDG_CONFIG_HOME)/python-postgres-count-tables, where
-  XDG_CONFIG_HOME defaults to $HOME/.config (XDG base spec)
-* /etc/python-postgres-count-tables
 
 Necessary database arguments:
  dbname, user, host, password
@@ -22,71 +15,21 @@ Necessary database arguments:
 """
 
 import argparse
-import ConfigParser
 import os
-import StringIO
 import sys
 
 import psycopg2
 
 
-def findconfig():
-    """return a ConfigParser object containing the configuration if one is
-    found, else return None."""
-    config = ConfigParser.ConfigParser()
-    locations = []
-    locations.append(os.getenv('PPCT_CONFIG'))
-    locations.append(os.path.join(os.getcwd(),  'ppct_config'))
-    if os.getenv('XDG_CONFIG_HOME'):
-        locations.append(os.path.join(os.getenv('XDG_CONFIG_HOME'),
-                                      'ppct_config'))
-    else:
-        locations.append(os.path.join(os.getenv('HOME'),
-                         '.config/ppct_config'))
-    locations.append('/etc/ppct_config')
-    locations = [item for item in locations if item]  # strip out any None
-    l = config.read(locations)
-    return l
 
-
-def createconfig(
-        dbname=os.getlogin(),
-        username=os.getlogin(),
-        password="",
-        host="localhost",
-        minimum=0,
-        maximum=0):
-    """return a ConfigParser containing some defaults."""
-    wconfig = ConfigParser.ConfigParser()
-    wconfig.add_section('Main')
-    wconfig.set('Main', 'dbname', dbname)
-    wconfig.set('Main', 'username', username)
-    wconfig.set('Main', 'password', password)
-    wconfig.set('Main', 'host', host)
-    wconfig.set('Main', 'minimum', minimum)
-    wconfig.set('Main', 'maximum', maximum)
-    return wconfig
-
-
-def stringconfig(config):
+def connectionfromargs(args):
     """
-    return a given ConfigParser as a string
+    given an argparse parser namespace, return a db connection.
     """
-    flo = StringIO.StringIO()  # file like object
-    config.write(flo)
-    flo.flush()
-    flo.seek(0)
-    return flo.read()
-
-
-def makeconnection(config):
-    """
-    given a config, return a connection.
-    """
-    conn = psycopg2.connect(database=config.get('Main', 'dbname'),
-                            user=config.get('Main', 'username'),
-                            password=config.get('Main', 'password'),
-                            host=config.get('Main', 'host'),
+    conn = psycopg2.connect(database=args.dbname,
+                            user=args.username,
+                            password=args.password,
+                            host=args.host
                             )
     return conn
 
@@ -146,10 +89,6 @@ if __name__ == "__main__":
         '--minimum', '-m', help=help['minimum'],default=0, type=int)
     parser.add_argument('--maximum', '-M', help=help['maximum'],default=0)
     args = parser.parse_args()
-    conf = createconfig(
-        dbname=args.dbname, username=args.username, password=args.password,
-        host=args.host, maximum=args.maximum, minimum=args.minimum)
-    #this is useful when debugging:
-    #print stringconfig(conf)
-    c = makeconnection(conf)
+    print type(args)
+    c = connectionfromargs(args)
     print(str(counttables(c,args.minimum,args.maximum)) + " tables counted.")
