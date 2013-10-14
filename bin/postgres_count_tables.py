@@ -87,7 +87,8 @@ if __name__ == "__main__":
     parser.add_argument('--password', '-q', help=help['password'], default='')
     parser.add_argument(
         '--minimum', '-m', help=help['minimum'],default=0, type=int)
-    parser.add_argument('--maximum', '-M', help=help['maximum'],default=0)
+    parser.add_argument('--maximum', '-M', help=help['maximum'],default=0,
+            type=int)
     args = parser.parse_args()
     print type(args)
     c = connectionfromargs(args)
