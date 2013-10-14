@@ -21,7 +21,6 @@ import sys
 import psycopg2
 
 
-
 def connectionfromargs(args):
     """
     given an argparse parser namespace, return a db connection.
@@ -42,8 +41,8 @@ def counttables(conn, minimum=0, maximum=0):
 
     Excludes tables in the information_schema and pg_catalog schemas.
     """
-    assert isinstance(minimum,int)
-    assert isinstance(maximum,int)
+    assert isinstance(minimum, int)
+    assert isinstance(maximum, int)
     query = "SELECT COUNT(table_name) FROM information_schema.tables "
     query += "WHERE table_schema != 'pg_catalog' AND table_schema != "
     query += "'information_schema';"
@@ -51,17 +50,17 @@ def counttables(conn, minimum=0, maximum=0):
     cur.execute(query)
     tablecount = int(cur.fetchone()[0])
     cur.close()
-    assert isinstance(tablecount,int)
+    assert isinstance(tablecount, int)
     #print "tablecount = ", tablecount
     #print "minimum = ", minimum
     #print "maximum = ", maximum
     #if minimum == 0 and maximum == 0:
     #    return tablecount
-    if tablecount < minimum and minimum !=0:
+    if tablecount < minimum and minimum != 0:
         sys.stderr.write(
             'Database contains less than ' + str(minimum) + ' tables\n')
         sys.exit(40)
-    if tablecount > maximum and maximum !=0:
+    if tablecount > maximum and maximum != 0:
         sys.stderr.write(
             'Database contains more than ' + str(maximum) + ' tables\n')
         sys.exit(41)
@@ -94,10 +93,10 @@ if __name__ == "__main__":
     parser.add_argument('--host', '-H', help=help['host'], default='localhost')
     parser.add_argument('--password', '-q', help=help['password'], default='')
     parser.add_argument(
-        '--minimum', '-m', help=help['minimum'],default=0, type=int)
-    parser.add_argument('--maximum', '-M', help=help['maximum'],default=0,
-            type=int)
+        '--minimum', '-m', help=help['minimum'], default=0, type=int)
+    parser.add_argument('--maximum', '-M', help=help['maximum'], default=0,
+                        type=int)
     args = parser.parse_args()
     print type(args)
     c = connectionfromargs(args)
-    print(str(counttables(c,args.minimum,args.maximum)) + " tables counted.")
+    print(str(counttables(c, args.minimum, args.maximum)) + " tables counted.")
