@@ -42,21 +42,26 @@ def counttables(conn, minimum=0, maximum=0):
 
     Excludes tables in the information_schema and pg_catalog schemas.
     """
+    assert isinstance(minimum,int)
+    assert isinstance(maximum,int)
     query = "SELECT COUNT(table_name) FROM information_schema.tables "
     query += "WHERE table_schema != 'pg_catalog' AND table_schema != "
     query += "'information_schema';"
     cur = conn.cursor()
     cur.execute(query)
-    tablecount = cur.fetchone()[0]
+    tablecount = int(cur.fetchone()[0])
     cur.close()
+    assert isinstance(tablecount,int)
+    #print "tablecount = ", tablecount
     #print "minimum = ", minimum
-    if minimum == 0 and maximum == 0:
-        return tablecount
-    if tablecount < minimum:
+    #print "maximum = ", maximum
+    #if minimum == 0 and maximum == 0:
+    #    return tablecount
+    if tablecount < minimum and minimum !=0:
         sys.stderr.write(
             'Database contains less than ' + str(minimum) + ' tables\n')
         sys.exit(40)
-    if tablecount > maximum:
+    if tablecount > maximum and maximum !=0:
         sys.stderr.write(
             'Database contains more than ' + str(maximum) + ' tables\n')
         sys.exit(41)
@@ -72,13 +77,16 @@ if __name__ == "__main__":
         'password': 'Defaults to empty string.',
         'minimum': 'The minimum number of tables. If the database has fewer \
                 tables than this, The script will exit with status \
-                40.',
+                40. Defaults to zero, which means no minimum number of \
+                tables.',
         'maximum': 'The maximum number of tables. If the database has \
                 more tables than thiis, the script will exit with status \
-                41.', }
+                41. Defaults to zero, which means no maximum number of \
+                tables.', }
 
     parser = argparse.ArgumentParser(
-        description="Count the number of tables in a given database")
+        description="Count the number of tables in a given database, raise \
+                exit code if maximum and/or minimum table counts are not met.")
     parser.add_argument('--dbname', '-d', help=help['dbname'],
                         default=os.getlogin())
     parser.add_argument(
